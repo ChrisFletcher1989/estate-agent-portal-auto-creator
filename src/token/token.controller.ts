@@ -6,7 +6,7 @@ export class TokenController {
   constructor(private readonly tokenService: TokenService) {}
 
   @Post()
-  createToken(): string {
+  createToken(): void {
     return this.tokenService.createToken();
   }
 }
