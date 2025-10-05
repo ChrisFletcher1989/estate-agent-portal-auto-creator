@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
-import { TokenController } from './app.controller';
-import { TokenService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { TokenModule } from './token/token.module';
+import { DropboxModule } from './dropbox/dropbox.module';
+import { AppController } from './app.controller';
 
 @Module({
-  imports: [],
-  controllers: [TokenController],
-  providers: [TokenService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    TokenModule,
+    DropboxModule,
+  ],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule {}
