@@ -1,0 +1,8 @@
+## TODO
+## 1) Create a yaml file to set up the deployment to SAM.
+## it should contain the following:
+## lambda deployment settings
+## api gateway settings
+## iam role settings
+## environment variables settings (TEMPLATES ONLY)
+## MEMO, when deploying, overwrite the environment variables with actual values by running --parameter-overrides in the sam deploy command
