@@ -55,22 +55,11 @@ export class DropboxService {
     return data.access_token;
   }
 
-  private async ensureValidDropboxClient(): Promise<void> {
-    if (!this.dropbox || !this.currentAccessToken) {
-      this.currentAccessToken = await this.getAccessTokenFromRefresh();
-      this.dropbox = new Dropbox({
-        accessToken: this.currentAccessToken,
-      });
-      console.log('Dropbox client initialized with fresh token');
-    }
-  }
-
   private async refreshDropboxClient(): Promise<void> {
     this.currentAccessToken = await this.getAccessTokenFromRefresh();
     this.dropbox = new Dropbox({
       accessToken: this.currentAccessToken,
     });
-    console.log('Dropbox client refreshed with new token');
   }
 
   async getTempLink(path: string): Promise<{
@@ -79,33 +68,17 @@ export class DropboxService {
     filesProcessed: number;
   }> {
     try {
-      // Ensure we have a valid Dropbox client
-      await this.ensureValidDropboxClient();
-
-      console.log('Processing folder at path:', path);
+      await this.refreshDropboxClient();
 
       // Step 1: List all files in the folder
-      console.log('Step 1: Listing files...');
       const files = await this.listFilesInFolder(path);
-      console.log(`Step 1 completed: Found ${files.length} files`);
 
       if (files.length === 0) {
-        console.log('No files found in the folder');
-        return {
-          tempDir: '',
-          files: [],
-          filesProcessed: 0,
-        };
+        throw new Error('No files found in the specified Dropbox folder');
       }
 
       // Step 2: Download all files to temp folder
-      console.log('Step 2: Downloading files...');
       const tempDir = await this.downloadFilesToTempFolder(files);
-      console.log(`Step 2 completed: Files downloaded to ${tempDir}`);
-
-      console.log(
-        `Successfully processed ${files.length} files to: ${tempDir}`,
-      );
 
       return {
         tempDir,
@@ -133,7 +106,7 @@ export class DropboxService {
           const files = await this.listFilesInFolder(path);
 
           if (files.length === 0) {
-            console.log('No files found in the folder after token refresh');
+            console.log('No files found in the folder');
             return {
               tempDir: '',
               files: [],
@@ -167,10 +140,6 @@ export class DropboxService {
 
   async listFilesInFolder(folderPath: string): Promise<DropboxFile[]> {
     try {
-      // Ensure we have a valid Dropbox client
-      await this.ensureValidDropboxClient();
-
-      console.log('Listing files in folder:', folderPath);
       const response = await this.dropbox!.filesListFolder({
         path: folderPath,
       });
@@ -184,36 +153,6 @@ export class DropboxService {
       return files;
     } catch (error) {
       console.error('Dropbox API error while listing files:', error);
-
-      // Check if it's a 401 error (token expired)
-      if (
-        error &&
-        typeof error === 'object' &&
-        'status' in error &&
-        (error as { status: number }).status === 401
-      ) {
-        console.log('Token expired, refreshing and retrying...');
-        try {
-          await this.refreshDropboxClient();
-
-          // Retry the request with the new token
-          console.log('Retrying list files request with refreshed token...');
-          const response = await this.dropbox!.filesListFolder({
-            path: folderPath,
-          });
-          const files = response.result.entries.filter(
-            (entry) => entry['.tag'] === 'file',
-          );
-          console.log(
-            `Found ${files.length} files in folder after token refresh`,
-          );
-          return files;
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-          throw new Error(`Token refresh failed: ${refreshError}`);
-        }
-      }
-
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
       throw new Error(`Failed to list files in folder: ${errorMessage}`);
@@ -226,10 +165,6 @@ export class DropboxService {
       const tempDir = await fs.mkdtemp(
         path.join(os.tmpdir(), 'dropbox-files-'),
       );
-      console.log(`Created temporary directory: ${tempDir}`);
-
-      // Ensure we have a valid Dropbox client
-      await this.ensureValidDropboxClient();
 
       // Download each file
       for (const file of files) {
@@ -239,83 +174,18 @@ export class DropboxService {
             continue;
           }
 
-          console.log(`Downloading file: ${file.name}`);
           const response = await this.dropbox!.filesDownload({
             path: file.path_lower,
           });
 
-          console.log('Download response structure:', {
-            hasResult: !!response.result,
-            resultType: typeof response.result,
-            resultKeys: response.result ? Object.keys(response.result) : [],
-          });
-
           // Write file to temp directory
           const filePath = path.join(tempDir, file.name);
-
-          // Handle different possible response structures
-          let fileData: Buffer;
-          const result = response.result as any;
-
-          if (result.fileBinary) {
-            fileData = Buffer.from(result.fileBinary);
-          } else if (result instanceof Buffer) {
-            fileData = result;
-          } else if (typeof result === 'string') {
-            fileData = Buffer.from(result, 'binary');
-          } else {
-            // Try to convert whatever we got to a buffer
-            fileData = Buffer.from(result);
-          }
-
+          const fileData = (
+            response.result as unknown as DropboxFileDownloadResult
+          ).fileBinary;
           await fs.writeFile(filePath, fileData);
-
-          console.log(`Downloaded file to: ${filePath}`);
         } catch (fileError) {
           console.error(`Failed to download file ${file.name}:`, fileError);
-
-          // Check if it's a 401 error (token expired)
-          if (
-            fileError &&
-            typeof fileError === 'object' &&
-            'status' in fileError &&
-            (fileError as { status: number }).status === 401
-          ) {
-            console.log(
-              'Token expired during download, refreshing and retrying...',
-            );
-            await this.refreshDropboxClient();
-
-            // Retry the download
-            if (file.path_lower) {
-              const retryResponse = await this.dropbox!.filesDownload({
-                path: file.path_lower,
-              });
-              const filePath = path.join(tempDir, file.name);
-
-              // Handle different possible response structures (same as above)
-              let fileData: Buffer;
-              const retryResult = retryResponse.result as any;
-
-              if (retryResult.fileBinary) {
-                fileData = Buffer.from(retryResult.fileBinary);
-              } else if (retryResult instanceof Buffer) {
-                fileData = retryResult;
-              } else if (typeof retryResult === 'string') {
-                fileData = Buffer.from(retryResult, 'binary');
-              } else {
-                fileData = Buffer.from(retryResult);
-              }
-
-              await fs.writeFile(filePath, fileData);
-              console.log(
-                `Downloaded file to: ${filePath} (after token refresh)`,
-              );
-            }
-          } else {
-            // Continue with other files even if one fails
-            console.warn(`Skipping file ${file.name} due to download error`);
-          }
         }
       }
 
@@ -346,25 +216,15 @@ export class DropboxService {
     let tempDir: string | null = null;
 
     try {
-      console.log(`Starting file processing for folder: ${folderPath}`);
-
       // Step 1: List files in the folder
       const files = await this.listFilesInFolder(folderPath);
 
       if (files.length === 0) {
-        console.log('No files found in the folder');
-        return {
-          files: [],
-          tempDir: '',
-          filesProcessed: 0,
-        };
+        throw new Error('No files found');
       }
 
       // Step 2: Download files to temp folder
       tempDir = await this.downloadFilesToTempFolder(files);
-
-      console.log(`Processing completed. Files downloaded to: ${tempDir}`);
-      console.log('Note: OpenAI analysis will be implemented later');
 
       // Return information about the process (temp folder not cleaned up yet)
       // This allows the caller to do additional processing before cleanup
@@ -397,6 +257,32 @@ export interface DropboxFile {
   name: string;
   path_lower?: string;
   '.tag': string;
+}
+
+export interface DropboxSharingInfo {
+  read_only: boolean;
+  parent_shared_folder_id: string;
+  modified_by: string;
+}
+
+export interface DropboxFileMetadata {
+  '.tag': 'file';
+  name: string;
+  path_lower: string;
+  path_display: string;
+  parent_shared_folder_id: string;
+  id: string;
+  client_modified: string;
+  server_modified: string;
+  rev: string;
+  size: number;
+  sharing_info: DropboxSharingInfo;
+  is_downloadable: boolean;
+  content_hash: string;
+}
+
+export interface DropboxFileDownloadResult {
+  fileBinary: Buffer;
 }
 
 export interface ProcessResult {
