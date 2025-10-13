@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TokenModule } from './token/token.module';
 import { DropboxModule } from './dropbox/dropbox.module';
 import { AppController } from './app.controller';
+import { OpenAiModule } from './openAi/openAI.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AppController } from './app.controller';
     }),
     TokenModule,
     DropboxModule,
+    OpenAiModule,
   ],
   controllers: [AppController],
   providers: [],
