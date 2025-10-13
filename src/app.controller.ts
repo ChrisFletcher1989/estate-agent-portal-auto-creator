@@ -1,14 +1,18 @@
 import { Controller, Get } from '@nestjs/common';
-import { DropboxService } from './dropbox/dropbox.service';
+import { DropboxService, DropboxFile } from './dropbox/dropbox.service';
 
 @Controller()
 export class AppController {
   constructor(private readonly dropboxService: DropboxService) {}
 
   @Get('dropboxLink')
-  async GetLink() {
+  async GetLink(): Promise<{
+    tempDir: string;
+    files: DropboxFile[];
+    filesProcessed: number;
+  }> {
     return await this.dropboxService.getTempLink(
-      '/PROPERTY SHOOTS/Burnet Ware/Edited/52 Thrale Road/Flat 7, 52, Thrale Road, London, SW16 1NY -colour.jpg',
+      '/PROPERTY SHOOTS/Burnet Ware/Edited/52 Thrale Road',
     );
   }
 }
