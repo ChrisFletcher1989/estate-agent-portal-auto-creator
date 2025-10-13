@@ -1,6 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { DropboxService, DropboxFile } from './dropbox/dropbox.service';
+import { DropboxService } from './dropbox/dropbox.service';
 import { OpenAiService } from './openAi/openAi.service';
+
+class TokenReqDto {
+  token: string;
+}
 
 @Controller()
 export class AppController {
@@ -9,17 +13,12 @@ export class AppController {
     private readonly openAiService: OpenAiService,
   ) {}
 
-  @Get('dropboxLink')
-  async GetLink(): Promise<{
-    tempDir: string;
-    files: DropboxFile[];
-    filesProcessed: number;
+  @Get('portal_draft')
+  async GetPortalDraft({ token }: TokenReqDto): Promise<{
     portalPost?: string;
   }> {
     // Step 1: Download images from Dropbox
-    const dropboxResult = await this.dropboxService.getTempLink(
-      '/PROPERTY SHOOTS/Burnet Ware/Edited/52 Thrale Road',
-    );
+    const dropboxResult = await this.dropboxService.getTempLink(token);
 
     // Step 2: If files were downloaded, analyze them with OpenAI
     let portalPost: string | undefined;
@@ -40,9 +39,8 @@ export class AppController {
         portalPost = 'Failed to analyze images';
       }
     }
-
+    console.log('Final portal post:', portalPost);
     return {
-      ...dropboxResult,
       portalPost,
     };
   }

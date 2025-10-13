@@ -43,7 +43,7 @@ export class OpenAiService {
             ],
           },
         ],
-        max_tokens: 1000,
+        max_completion_tokens: 5000,
       });
 
       return (

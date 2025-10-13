@@ -4,6 +4,7 @@ import { TokenModule } from './token/token.module';
 import { DropboxModule } from './dropbox/dropbox.module';
 import { AppController } from './app.controller';
 import { OpenAiModule } from './openAi/openAI.module';
+import { DynamoDBModule } from './dynamodb/dynamodb.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { OpenAiModule } from './openAi/openAI.module';
     TokenModule,
     DropboxModule,
     OpenAiModule,
+    DynamoDBModule,
   ],
   controllers: [AppController],
   providers: [],
