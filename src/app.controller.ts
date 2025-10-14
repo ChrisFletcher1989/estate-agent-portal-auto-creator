@@ -9,6 +9,7 @@ class TokenReqDto {
 
 class AddPropertyDto {
   path: string;
+  token: string;
 }
 
 @Controller()
@@ -55,6 +56,7 @@ export class AppController {
   async addProperty(@Body() addPropertyDto: AddPropertyDto) {
     const property = await this.customerTokensService.createPropertyRecord(
       addPropertyDto.path,
+      addPropertyDto.token,
     );
     return {
       success: true,

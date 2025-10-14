@@ -14,23 +14,13 @@ export class CustomerTokensService {
    * @param path The file path for the property
    * @returns The created property record
    */
-  async createPropertyRecord(path: string): Promise<PropertyTokens> {
+  async createPropertyRecord(
+    path: string,
+    token: string,
+  ): Promise<PropertyTokens> {
     try {
       // Generate unique ID (timestamp + random number for uniqueness)
       const id = Date.now() + Math.floor(Math.random());
-
-      // Get first 4 characters of the path
-      const pathPrefix = path.substring(0, 4);
-
-      // Get current date and time
-      const now = new Date();
-      const dateTimeString = now
-        .toISOString()
-        .replace(/[-:T.]/g, '')
-        .substring(0, 14); // YYYYMMDDHHMMSS
-
-      // Create token: first 4 chars of path + date/time
-      const token = `${pathPrefix}${dateTimeString}`;
 
       // Calculate expiry date: 1 week from now in UTC
       const expiresAt = new Date();
