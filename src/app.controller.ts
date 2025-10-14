@@ -1,9 +1,14 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { DropboxService } from './dropbox/dropbox.service';
 import { OpenAiService } from './openAi/openAi.service';
+import { CustomerTokensService } from './customerTokens/customerTokens.service';
 
 class TokenReqDto {
   token: string;
+}
+
+class AddPropertyDto {
+  path: string;
 }
 
 @Controller()
@@ -11,6 +16,7 @@ export class AppController {
   constructor(
     private readonly dropboxService: DropboxService,
     private readonly openAiService: OpenAiService,
+    private readonly customerTokensService: CustomerTokensService,
   ) {}
 
   @Get('portal_draft')
@@ -42,6 +48,17 @@ export class AppController {
     console.log('Final portal post:', portalPost);
     return {
       portalPost,
+    };
+  }
+
+  @Post('add-property')
+  async addProperty(@Body() addPropertyDto: AddPropertyDto) {
+    const property = await this.customerTokensService.createPropertyRecord(
+      addPropertyDto.path,
+    );
+    return {
+      success: true,
+      property,
     };
   }
 }
