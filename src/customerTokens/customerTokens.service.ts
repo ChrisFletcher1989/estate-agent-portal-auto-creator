@@ -30,7 +30,7 @@ export class CustomerTokensService {
       const propertyRecord: PropertyTokens = {
         id,
         token,
-        filePath: path,
+        filePath: `${path}/Download Folder`,
         used: false,
         createdAt: new Date().toISOString(),
         expiredAt: expiresAt.toISOString(),

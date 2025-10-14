@@ -4,13 +4,18 @@ import { Dropbox } from 'dropbox';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { DynamoDBService } from '../dynamodb/dynamodb.service';
+import { PropertyTokens } from '../models/models';
 
 @Injectable()
 export class DropboxService {
   private dropbox: Dropbox | null = null;
   private currentAccessToken: string | null = null;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private dynamoDBService: DynamoDBService,
+  ) {}
 
   private async getAccessTokenFromRefresh(): Promise<string> {
     const refreshToken = this.configService.get<string>(
@@ -55,6 +60,26 @@ export class DropboxService {
     return data.access_token;
   }
 
+  private async getFilePathFromToken(token: string): Promise<string> {
+    const result = await this.dynamoDBService.scanItems({
+      TableName: 'PropertyTokens',
+      FilterExpression: '#token = :tokenValue',
+      ExpressionAttributeNames: {
+        '#token': 'token',
+      },
+      ExpressionAttributeValues: {
+        ':tokenValue': token,
+      },
+    });
+
+    if (!result.Items || result.Items.length === 0) {
+      throw new Error(`No record found for token: ${token}`);
+    }
+
+    const propertyToken = result.Items[0] as PropertyTokens;
+    return propertyToken.filePath;
+  }
+
   private async refreshDropboxClient(): Promise<void> {
     this.currentAccessToken = await this.getAccessTokenFromRefresh();
     this.dropbox = new Dropbox({
@@ -62,16 +87,18 @@ export class DropboxService {
     });
   }
 
-  async getTempLink(path: string): Promise<{
+  async getTempLink(token: string): Promise<{
     tempDir: string;
     files: DropboxFile[];
     filesProcessed: number;
   }> {
     try {
+      //get the path from the PropertyTokens table using the token to query the record
+      const folderPath = await this.getFilePathFromToken(token);
       await this.refreshDropboxClient();
 
       // Step 1: List all files in the folder
-      const files = await this.listFilesInFolder(path);
+      const files = await this.listFilesInFolder(folderPath);
 
       if (files.length === 0) {
         throw new Error('No files found in the specified Dropbox folder');
@@ -103,7 +130,8 @@ export class DropboxService {
           console.log('Retrying folder processing with refreshed token...');
 
           // Step 1: List all files in the folder
-          const files = await this.listFilesInFolder(path);
+          const folderPath = await this.getFilePathFromToken(token);
+          const files = await this.listFilesInFolder(folderPath);
 
           if (files.length === 0) {
             console.log('No files found in the folder');

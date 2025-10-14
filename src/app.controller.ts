@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { DropboxService } from './dropbox/dropbox.service';
 import { OpenAiService } from './openAi/openAi.service';
 import { CustomerTokensService } from './customerTokens/customerTokens.service';
@@ -20,8 +20,8 @@ export class AppController {
     private readonly customerTokensService: CustomerTokensService,
   ) {}
 
-  @Get('portal_draft')
-  async GetPortalDraft({ token }: TokenReqDto): Promise<{
+  @Post('portal_draft')
+  async GetPortalDraft(@Body() { token }: TokenReqDto): Promise<{
     portalPost?: string;
   }> {
     // Step 1: Download images from Dropbox
