@@ -1,4 +1,4 @@
-export interface Property {
+export interface PropertyTokens {
   id: number; //primary key
   token: string;
   filePath: string;

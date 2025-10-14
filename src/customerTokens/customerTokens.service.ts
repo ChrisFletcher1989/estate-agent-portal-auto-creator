@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DynamoDBService } from '../dynamodb/dynamodb.service';
-import { Property } from '../models/models';
+import { PropertyTokens } from '../models/models';
 
 @Injectable()
 export class CustomerTokensService {
   private readonly logger = new Logger(CustomerTokensService.name);
-  private readonly tableName = 'Property';
+  private readonly tableName = 'PropertyTokens';
 
   constructor(private readonly dynamoDBService: DynamoDBService) {}
 
@@ -14,7 +14,7 @@ export class CustomerTokensService {
    * @param path The file path for the property
    * @returns The created property record
    */
-  async createPropertyRecord(path: string): Promise<Property> {
+  async createPropertyRecord(path: string): Promise<PropertyTokens> {
     try {
       // Generate unique ID (timestamp + random number for uniqueness)
       const id = Date.now() + Math.floor(Math.random());
@@ -37,7 +37,7 @@ export class CustomerTokensService {
       expiresAt.setUTCDate(expiresAt.getUTCDate() + 7);
 
       // Create the property record
-      const propertyRecord: Property = {
+      const propertyRecord: PropertyTokens = {
         id,
         token,
         filePath: path,
