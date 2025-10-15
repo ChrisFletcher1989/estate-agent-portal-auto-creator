@@ -24,6 +24,9 @@ export class AppController {
   async GetPortalDraft(@Body() { token }: TokenReqDto): Promise<{
     portalPost?: string;
   }> {
+    //NEW PLAN: When the webhook comes in, create a .txt file from the AI res and add it directly back into the dropbox folder it came from!!!
+    // Agents can add comments to the file which will enable the AI to read and automatically update it!!
+
     // Step 1: Download images from Dropbox
     const dropboxResult = await this.dropboxService.getTempLink(token);
 
