@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class OpenAiService {
@@ -46,10 +48,39 @@ export class OpenAiService {
         max_completion_tokens: 5000,
       });
 
-      return (
+      const responseContent =
         response.choices[0]?.message?.content ||
-        'Unable to generate description'
-      );
+        'Unable to generate description';
+
+      // Create temporary file with the response content
+      try {
+        const tempDir = path.join(process.cwd(), 'temp');
+
+        // Ensure temp directory exists
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        const fileName = 'portal-draft.txt';
+        const filePath = path.join(tempDir, fileName);
+
+        // Add disclaimer at the start of the file
+        const disclaimer = `This draft was made using the photos and floor plans as context, and was designed to be edited (if needed) before being copy/pasted into portals such as rightmove and zoopla.
+\x1b[31mIMPORTANT: This document is a draft only and was made with AI. AI can make mistakes. It is vital to fact check the contents, and property photo geeks ltd take no responsibility for the accuracy of it's contents.\x1b[0m
+
+---
+
+`;
+
+        const fileContent = disclaimer + responseContent;
+
+        await fs.promises.writeFile(filePath, fileContent, 'utf8');
+        console.log(`Property description saved to: ${filePath}`);
+      } catch (fileError) {
+        console.error('Error creating temp file:', fileError);
+      }
+
+      return responseContent;
     } catch (error) {
       console.error('OpenAI API error:', error);
       const errorMessage =
