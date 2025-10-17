@@ -25,7 +25,7 @@ export class DropboxService {
       await this.refreshDropboxClient();
 
       // Step 1: List all files in the folder
-      const files = await this.listFilesInFolder(path);
+      const files = await this.listFilesInFolder(`${path}/Download Folder`);
 
       if (files.length === 0) {
         throw new Error('No files found in the specified Dropbox folder');
@@ -109,19 +109,6 @@ export class DropboxService {
     }
   }
 
-  async cleanupTempFolder(tempDir: string): Promise<void> {
-    try {
-      console.log(`Cleaning up temporary directory: ${tempDir}`);
-      await fs.rm(tempDir, { recursive: true, force: true });
-      console.log('Temporary directory cleaned up successfully');
-    } catch (error) {
-      console.error('Failed to cleanup temporary directory:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-      throw new Error(`Failed to cleanup temp folder: ${errorMessage}`);
-    }
-  }
-
   async uploadFile(fileName: string, folderPath: string): Promise<void> {
     try {
       await this.refreshDropboxClient();
@@ -131,7 +118,7 @@ export class DropboxService {
       const fileContent = await fs.readFile(tempFilePath, 'utf8');
 
       // Create the destination path in Dropbox
-      const dropboxPath = `${folderPath}/${fileName}`;
+      const dropboxPath = `${folderPath}/Download Folder/${fileName}`;
 
       // Upload the file to Dropbox
       await this.dropbox!.filesUpload({
@@ -149,6 +136,19 @@ export class DropboxService {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
       throw new Error(`Failed to upload file: ${errorMessage}`);
+    }
+  }
+
+  async cleanupTempFolder(tempDir: string): Promise<void> {
+    try {
+      console.log(`Cleaning up temporary directory: ${tempDir}`);
+      await fs.rm(tempDir, { recursive: true, force: true });
+      console.log('Temporary directory cleaned up successfully');
+    } catch (error) {
+      console.error('Failed to cleanup temporary directory:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Failed to cleanup temp folder: ${errorMessage}`);
     }
   }
 

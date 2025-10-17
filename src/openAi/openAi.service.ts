@@ -39,7 +39,7 @@ export class OpenAiService {
             content: [
               {
                 type: 'text',
-                text: 'Analyze these property images and create a detailed, engaging property description for a real estate portal. Include key features, room descriptions, and selling points that would attract potential buyers.',
+                text: 'You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. Include key features, room descriptions, and selling points that would attract potential buyers. Assume the property is a residential home located at the address in the floor plan. Based on the postcode, write some plus points of the local area too.',
               },
               ...imageContents,
             ],
@@ -65,8 +65,10 @@ export class OpenAiService {
         const filePath = path.join(tempDir, fileName);
 
         // Add disclaimer at the start of the file
-        const disclaimer = `This draft was made using the photos and floor plans as context, and was designed to be edited (if needed) before being copy/pasted into portals such as rightmove and zoopla.
-\x1b[31mIMPORTANT: This document is a draft only and was made with AI. AI can make mistakes. It is vital to fact check the contents, and property photo geeks ltd take no responsibility for the accuracy of it's contents.\x1b[0m
+        const disclaimer = `Downloading and opening in word/google docs etc will fix the formatting and make an easier to read version.
+       
+        This draft was made using the photos and floor plans as context, and was designed to be edited (if needed) before being copy/pasted into portals such as rightmove and zoopla.
+IMPORTANT: This document is a draft only and was made with AI. AI can make mistakes. It is vital to fact check the contents, and property photo geeks ltd take no responsibility for the accuracy of it's contents.
 
 ---
 
