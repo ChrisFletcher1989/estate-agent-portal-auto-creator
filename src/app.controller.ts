@@ -3,13 +3,8 @@ import { DropboxService } from './dropbox/dropbox.service';
 import { OpenAiService } from './openAi/openAi.service';
 import { CustomerTokensService } from './customerTokens/customerTokens.service';
 
-class TokenReqDto {
-  token: string;
-}
-
-class AddPropertyDto {
+class AddDraftReqDto {
   path: string;
-  token: string;
 }
 
 @Controller()
@@ -21,14 +16,11 @@ export class AppController {
   ) {}
 
   @Post('portal_draft')
-  async GetPortalDraft(@Body() { token }: TokenReqDto): Promise<{
+  async GetPortalDraft(@Body() { path: requestPath }: AddDraftReqDto): Promise<{
     portalPost?: string;
   }> {
-    //NEW PLAN: When the webhook comes in, create a .txt file from the AI res and add it directly back into the dropbox folder it came from!!!
-    // Agents can add comments to the file which will enable the AI to read and automatically update it!!
-
     // Step 1: Download images from Dropbox
-    const dropboxResult = await this.dropboxService.getTempLink(token);
+    const dropboxResult = await this.dropboxService.downloadFiles(requestPath);
 
     // Step 2: If files were downloaded, analyze them with OpenAI
     let portalPost: string | undefined;
@@ -44,26 +36,25 @@ export class AppController {
 
         portalPost = await this.openAiService.analyzePropertyImages(imagePaths);
         console.log('OpenAI analysis completed successfully');
+
+        // Upload the generated text file back to Dropbox
+        try {
+          await this.dropboxService.uploadFile('portal-draft.txt', requestPath);
+          console.log('Text file uploaded to Dropbox successfully');
+        } catch (uploadError) {
+          console.error('Failed to upload text file to Dropbox:', uploadError);
+        }
       } catch (error) {
         console.error('Failed to analyze images with OpenAI:', error);
         portalPost = 'Failed to analyze images';
+      } finally {
+        await this.dropboxService.cleanupTempFolder(dropboxResult.tempDir);
       }
     }
     console.log('Final portal post:', portalPost);
+    await this.dropboxService.cleanupTempFolder(dropboxResult.tempDir);
     return {
       portalPost,
-    };
-  }
-
-  @Post('add-property')
-  async addProperty(@Body() addPropertyDto: AddPropertyDto) {
-    const property = await this.customerTokensService.createPropertyRecord(
-      addPropertyDto.path,
-      addPropertyDto.token,
-    );
-    return {
-      success: true,
-      property,
     };
   }
 }
