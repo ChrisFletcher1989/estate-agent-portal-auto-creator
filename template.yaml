@@ -42,8 +42,8 @@ Resources:
   EstateAgentPortalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/
-      Handler: main.handler
+      CodeUri: .
+      Handler: dist/main.handler
       Runtime: nodejs18.x
       Timeout: 300 # 5 minutes to handle file downloads and OpenAI processing
       MemorySize: 512
@@ -61,6 +61,7 @@ Resources:
             RestApiId: !Ref EstateAgentPortalApi
             Path: /portal_draft
             Method: post
+            TimeoutInMillis: 29000
             Auth:
               ApiKeyRequired: true
       Policies:
@@ -94,6 +95,7 @@ Resources:
         AllowMethods: "'POST, OPTIONS'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
+      BinaryMediaTypes: []
 
   # API Key for accessing the API
   EstateAgentPortalApiKey:
