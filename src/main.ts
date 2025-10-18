@@ -1,28 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import express from 'express';
+import serverless from 'serverless-http';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+let cachedServer: ReturnType<typeof serverless> | null = null;
 
-  const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3000);
-
-  // Configure longer timeout for requests that may take more than 30 seconds
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const server = await app.listen(port);
-
-  // Configure server timeouts to handle long-running processes (5 minutes)
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  server.setTimeout(300000);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  server.keepAliveTimeout = 300000;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  server.headersTimeout = 300000;
-
-  console.log(`Application is running on: http://localhost:${port}`);
+async function bootstrapServer() {
+  if (!cachedServer) {
+    const expressApp = express();
+    const app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressApp),
+    );
+    await app.init();
+    cachedServer = serverless(expressApp);
+  }
+  return cachedServer;
 }
-bootstrap().catch((err) => {
-  console.error('Error starting application:', err);
-  process.exit(1);
-});
+
+export const handler = async (event: any, context: any) => {
+  const server = await bootstrapServer();
+  return server(event, context);
+};

@@ -1,8 +1,183 @@
-## TODO
-## 1) Create a yaml file to set up the deployment to SAM.
-## it should contain the following:
-## lambda deployment settings
-## api gateway settings
-## iam role settings
-## environment variables settings (TEMPLATES ONLY)
-## MEMO, when deploying, overwrite the environment variables with actual values by running --parameter-overrides in the sam deploy command
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Estate Agent Portal Auto Creator - NestJS Lambda
+
+# Parameters for secure environment variable injection during deployment
+Parameters:
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+    Description: OpenAI API Key
+    Default: 'PLACEHOLDER_OPENAI_API_KEY'
+
+  DropboxRefreshToken:
+    Type: String
+    NoEcho: true
+    Description: Dropbox OAuth2 Refresh Token
+    Default: 'PLACEHOLDER_DROPBOX_REFRESH_TOKEN'
+
+  DropboxClientId:
+    Type: String
+    NoEcho: true
+    Description: Dropbox OAuth2 Client ID
+    Default: 'PLACEHOLDER_DROPBOX_CLIENT_ID'
+
+  DropboxClientSecret:
+    Type: String
+    NoEcho: true
+    Description: Dropbox OAuth2 Client Secret
+    Default: 'PLACEHOLDER_DROPBOX_CLIENT_SECRET'
+
+# Global configurations
+Globals:
+  Function:
+    Timeout: 300 # 5 minutes
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        NODE_ENV: production
+
+Resources:
+  # Lambda function for the Estate Agent Portal API
+  EstateAgentPortalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: main.handler
+      Runtime: nodejs18.x
+      Timeout: 300 # 5 minutes to handle file downloads and OpenAI processing
+      MemorySize: 512
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          DROPBOX_REFRESH_TOKEN: !Ref DropboxRefreshToken
+          DROPBOX_CLIENT_ID: !Ref DropboxClientId
+          DROPBOX_CLIENT_SECRET: !Ref DropboxClientSecret
+          DYNAMODB_TABLE: !Ref CustomerTokensTable
+      Events:
+        PortalDraftApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref EstateAgentPortalApi
+            Path: /portal_draft
+            Method: post
+            Auth:
+              ApiKeyRequired: true
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource: !GetAtt CustomerTokensTable.Arn
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+
+  # API Gateway REST API
+  EstateAgentPortalApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: app
+      Description: Estate Agent Portal Auto Creator API
+      Auth:
+        ApiKeyRequired: true
+      Cors:
+        AllowMethods: "'POST, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+  # API Key for accessing the API
+  EstateAgentPortalApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: EstateAgentPortalApiKey
+      Description: API Key for Estate Agent Portal Auto Creator
+      Enabled: true
+
+  # Usage Plan to enforce the 100 requests per day limit
+  EstateAgentPortalUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: EstateAgentPortalUsagePlan
+      Description: Usage plan with 100 requests per day limit
+      Quota:
+        Limit: 100
+        Period: DAY
+      Throttle:
+        BurstLimit: 10
+        RateLimit: 5
+
+  # Link API Key to Usage Plan
+  EstateAgentPortalUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref EstateAgentPortalApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref EstateAgentPortalUsagePlan
+
+  # DynamoDB Table for Customer Tokens
+  CustomerTokensTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-CustomerTokens'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Project
+          Value: EstateAgentPortalAutoCreator
+        - Key: Environment
+          Value: production
+
+# Outputs to display important information after deployment
+Outputs:
+  EstateAgentPortalApiUrl:
+    Description: 'API Gateway endpoint URL for Estate Agent Portal'
+    Value: !Sub 'https://${EstateAgentPortalApi}.execute-api.${AWS::Region}.amazonaws.com/app'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+
+  EstateAgentPortalApiKey:
+    Description: 'API Key for accessing the Estate Agent Portal API'
+    Value: !Ref EstateAgentPortalApiKey
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiKey'
+
+  CustomerTokensTableName:
+    Description: 'DynamoDB table name for Customer Tokens'
+    Value: !Ref CustomerTokensTable
+    Export:
+      Name: !Sub '${AWS::StackName}-CustomerTokensTable'
+
+  LambdaFunctionName:
+    Description: 'Lambda function name'
+    Value: !Ref EstateAgentPortalFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaFunction'
+# Deployment Notes:
+# To deploy with actual environment variables, use:
+# sam deploy --parameter-overrides \
+#   OpenAIApiKey=your-actual-openai-api-key \
+#   DropboxRefreshToken=your-actual-dropbox-refresh-token \
+#   DropboxClientId=your-actual-dropbox-client-id \
+#   DropboxClientSecret=your-actual-dropbox-client-secret
+
