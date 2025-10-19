@@ -113,8 +113,8 @@ export class DropboxService {
     try {
       await this.refreshDropboxClient();
 
-      // Read the file from temp directory
-      const tempFilePath = path.join(process.cwd(), 'temp', fileName);
+      // Read the file from Lambda's /tmp directory
+      const tempFilePath = path.join('/tmp', fileName);
       const fileContent = await fs.readFile(tempFilePath, 'utf8');
 
       // Create the destination path in Dropbox
