@@ -91,6 +91,10 @@ Resources:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
               Resource: '*'
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !Ref PortalPostSqsArn
 
   # Lambda function for SQS message processing
   PortalPostSqsHandlerFunction:
