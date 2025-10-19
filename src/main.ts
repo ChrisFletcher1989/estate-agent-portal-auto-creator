@@ -9,7 +9,7 @@ let cachedServer: ReturnType<typeof serverless> | null = null;
 async function bootstrapServer() {
   if (!cachedServer) {
     const expressApp = express();
-    expressApp.use(express.json()); // Enable JSON body parsing
+    expressApp.use(express.json());
     const app = await NestFactory.create(
       AppModule,
       new ExpressAdapter(expressApp),

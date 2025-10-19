@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { OpenAiModule } from './openAi/openAI.module';
 import { DynamoDBModule } from './dynamodb/dynamodb.module';
 import { CustomerTokensModule } from './customerTokens/customerTokens.module';
+import { SqsModule } from './sqs/sqs.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CustomerTokensModule } from './customerTokens/customerTokens.module';
     OpenAiModule,
     DynamoDBModule,
     CustomerTokensModule,
+    SqsModule,
   ],
   controllers: [AppController],
   providers: [],

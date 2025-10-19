@@ -4,6 +4,14 @@ Description: Estate Agent Portal Auto Creator - NestJS Lambda
 
 # Parameters for secure environment variable injection during deployment
 Parameters:
+  PortalPostSqsArn:
+    Type: String
+    Description: SQS Queue ARN for portal post paths
+    Default: 'PLACEHOLDER_SQS_QUEUE_ARN'
+  PortalPostSqsUrl:
+    Type: String
+    Description: SQS Queue URL for portal post paths
+    Default: 'PLACEHOLDER_SQS_QUEUE_URL'
   OpenAIApiKey:
     Type: String
     NoEcho: true
@@ -31,7 +39,7 @@ Parameters:
 # Global configurations
 Globals:
   Function:
-    Timeout: 300 # 5 minutes
+    Timeout: 300
     Runtime: nodejs18.x
     Environment:
       Variables:
@@ -45,7 +53,7 @@ Resources:
       CodeUri: .
       Handler: dist/main.handler
       Runtime: nodejs18.x
-      Timeout: 300 # 5 minutes to handle file downloads and OpenAI processing
+      Timeout: 300
       MemorySize: 512
       Environment:
         Variables:
@@ -54,6 +62,7 @@ Resources:
           DROPBOX_CLIENT_ID: !Ref DropboxClientId
           DROPBOX_CLIENT_SECRET: !Ref DropboxClientSecret
           DYNAMODB_TABLE: !Ref CustomerTokensTable
+          SQS_QUEUE_URL: !Ref PortalPostSqsUrl
       Events:
         PortalDraftApi:
           Type: Api
@@ -64,6 +73,47 @@ Resources:
             TimeoutInMillis: 29000
             Auth:
               ApiKeyRequired: true
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource: !GetAtt CustomerTokensTable.Arn
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+
+  # Lambda function for SQS message processing
+  PortalPostSqsHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: dist/sqs/sqs.handler.handler
+      Runtime: nodejs18.x
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          DROPBOX_REFRESH_TOKEN: !Ref DropboxRefreshToken
+          DROPBOX_CLIENT_ID: !Ref DropboxClientId
+          DROPBOX_CLIENT_SECRET: !Ref DropboxClientSecret
+          DYNAMODB_TABLE: !Ref CustomerTokensTable
+          SQS_QUEUE_URL: !Ref PortalPostSqsUrl
+      Events:
+        PortalPostSqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !Ref PortalPostSqsArn
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -182,4 +232,5 @@ Outputs:
 #   DropboxRefreshToken=your-actual-dropbox-refresh-token \
 #   DropboxClientId=your-actual-dropbox-client-id \
 #   DropboxClientSecret=your-actual-dropbox-client-secret
+#   PortalPostSqsUrl=your-actual-sqs-queue-url
 
