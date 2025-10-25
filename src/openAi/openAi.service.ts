@@ -42,7 +42,7 @@ export class OpenAiService {
             content: [
               {
                 type: 'text',
-                text: `You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. OutputSettings: ${outputSettings}`,
+                text: `You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. Markdown outputSettings: ${outputSettings}`,
               },
               ...imageContents,
             ],
