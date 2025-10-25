@@ -16,7 +16,7 @@ export class OpenAiService {
 
   async analyzePropertyImages(
     imagePaths: string[],
-    outputSettings: Buffer | string,
+    outputSettings: string,
   ): Promise<string> {
     try {
       // Convert images to base64 for OpenAI Vision API
@@ -42,7 +42,7 @@ export class OpenAiService {
             content: [
               {
                 type: 'text',
-                text: `You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. OutputSettings: ${outputSettings.toString()}`,
+                text: `You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. OutputSettings: ${outputSettings}`,
               },
               ...imageContents,
             ],

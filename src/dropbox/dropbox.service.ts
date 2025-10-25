@@ -21,20 +21,15 @@ export class DropboxService {
    * @param filePath The Dropbox file path (e.g. /foo/bar/baz/abc.txt)
    * @returns The file contents as a Buffer
    */
-  async downloadOutputSettings(filePath: string): Promise<Buffer | string> {
-    try {
-      await this.refreshDropboxClient();
-
-      const parts = filePath.split('/').filter(Boolean);
-      const cutPath = '/' + parts.slice(0, 2).join('/');
-      const targetPath = `${cutPath}/outputSettings.txt`;
-      const response = await this.dropbox!.filesDownload({ path: targetPath });
-      console.log(response.result);
-      return (response.result as unknown as DropboxFileDownloadResult)
-        .fileBinary;
-    } catch {
-      return ' Include key features, room descriptions, and selling points that would attract potential buyers. Assume the property is a residential home located at the address in the floor plan. Based on the postcode, write some plus points of the local area too.';
-    }
+  async downloadOutputSettings(filePath: string): Promise<string> {
+    await this.refreshDropboxClient();
+    const parts = filePath.split('/').filter(Boolean);
+    const cutPath = '/' + parts.slice(0, 2).join('/');
+    const targetPath = `${cutPath}/outputSettings.txt`;
+    const response = await this.dropbox!.filesDownload({ path: targetPath });
+    const buffer = (response.result as unknown as DropboxFileDownloadResult)
+      .fileBinary;
+    return buffer.toString('utf8');
   }
 
   async downloadFiles(path: string): Promise<{
