@@ -25,8 +25,13 @@ export const handler = async (event: any): Promise<void> => {
         const imagePaths = files.map((file) =>
           path.join(dropboxResult.tempDir, file),
         );
-
-        portalPost = await openAiService.analyzePropertyImages(imagePaths);
+        const outputSettings =
+          await dropboxService.downloadOutputSettings(requestPath);
+        console.log('Downloaded outputSettings:', outputSettings);
+        portalPost = await openAiService.analyzePropertyImages(
+          imagePaths,
+          outputSettings,
+        );
         console.log('OpenAI analysis completed successfully');
 
         // Upload the generated text file back to Dropbox

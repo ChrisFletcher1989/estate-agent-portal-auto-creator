@@ -14,7 +14,10 @@ export class OpenAiService {
     });
   }
 
-  async analyzePropertyImages(imagePaths: string[]): Promise<string> {
+  async analyzePropertyImages(
+    imagePaths: string[],
+    outputSettings: Buffer | string,
+  ): Promise<string> {
     try {
       // Convert images to base64 for OpenAI Vision API
       const imageContents = await Promise.all(
@@ -39,7 +42,7 @@ export class OpenAiService {
             content: [
               {
                 type: 'text',
-                text: 'You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. Include key features, room descriptions, and selling points that would attract potential buyers. Assume the property is a residential home located at the address in the floor plan. Based on the postcode, write some plus points of the local area too.',
+                text: `You are a high end estate agent lister. Analyze these property images and create a detailed, engaging property description for a UK real estate portal such as Rightmove or Zoopla. OutputSettings: ${outputSettings.toString()}`,
               },
               ...imageContents,
             ],
