@@ -60,11 +60,13 @@ export class OpenAiService {
         // Write the result to /tmp/portal-draft.txt for Lambda compatibility
         const fileName = 'portal-draft.txt';
         const filePath = path.join('/tmp', fileName);
-        const disclaimer = `Downloading and opening in word/google docs etc will fix the formatting and make an easier to read version.
+        const disclaimer = `***INSTRUCTIONS***
+Downloading and opening in word/google docs etc will fix the formatting and make an easier to read version.
 
+###DISCLAIMER***
 This draft was made using the photos and floor plans as context, and was designed to be edited (if needed) before being copy/pasted into portals such as rightmove and zoopla.
 IMPORTANT: This document is a draft only and was made with AI. AI can make mistakes. It is vital to fact check the contents, and property photo geeks ltd take no responsibility for the accuracy of it's contents.
-
+###DISCLAIMER***
 ---
 
 `;
