@@ -36,7 +36,7 @@ export const handler = async (event: any): Promise<void> => {
 
         // Upload the generated text file back to Dropbox
         try {
-          await dropboxService.uploadFile('portal-draft.txt', requestPath);
+          await dropboxService.uploadFile('instant-portal-draft.txt', requestPath);
           console.log('Text file uploaded to Dropbox successfully');
         } catch (uploadError) {
           console.error('Failed to upload text file to Dropbox:', uploadError);
