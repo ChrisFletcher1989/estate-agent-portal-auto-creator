@@ -33,10 +33,11 @@ export class OpenAiService {
           };
         }),
       );
+      
       if (imageContents.length < 4) {
         throw new Error('At least 4 images are required for analysis.');
       }
-      
+
       const response = await this.client.chat.completions.create({
         model: 'gpt-5',
         messages: [
@@ -60,8 +61,8 @@ export class OpenAiService {
 
       // Create temporary file with the response content
       try {
-        // Write the result to /tmp/portal-draft.txt for Lambda compatibility
-        const fileName = 'portal-draft.txt';
+        // Write the result to /tmp/instant-listing-draft.txt for Lambda compatibility
+        const fileName = 'instant-listing-draft.txt';
         const filePath = path.join('/tmp', fileName);
         const disclaimer = `***INSTRUCTIONS***
 Downloading and opening in word/google docs etc will fix the formatting and make an easier to read version.
