@@ -33,7 +33,10 @@ export class OpenAiService {
           };
         }),
       );
-
+      if (imageContents.length < 4) {
+        throw new Error('At least 4 images are required for analysis.');
+      }
+      
       const response = await this.client.chat.completions.create({
         model: 'gpt-5',
         messages: [
