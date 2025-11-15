@@ -62,7 +62,7 @@ export class OpenAiService {
       // Create temporary file with the response content
       try {
         // Write the result to /tmp/instant-listing-draft.txt for Lambda compatibility
-        const fileName = 'instant-listing-draft.txt';
+        const fileName = 'instant-portal-draft.txt';
         const filePath = path.join('/tmp', fileName);
         const disclaimer = `***INSTRUCTIONS***
 Downloading and opening in word/google docs etc will fix the formatting and make an easier to read version.
